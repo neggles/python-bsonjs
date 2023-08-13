@@ -24,9 +24,7 @@ PyDoc_STRVAR(bsonjs_documentation,
 "This module provides the functions `dump(s)` and `load(s)` that wrap\n"
 "native libbson functions. https://github.com/mongodb/libbson");
 
-char *
-bson_str_to_json(const char *bson, size_t bson_len, size_t *json_len, const
-int mode)
+char *bson_str_to_json(const char *bson, size_t bson_len, size_t *json_len, const int mode)
 {
     char *json;
     const bson_t *b;
@@ -40,6 +38,7 @@ int mode)
         bson_reader_destroy(reader);
         return NULL;
     }
+
     if (mode == 1) {
         json = bson_as_relaxed_extended_json(b, json_len);
     } else if (mode == 2) {
@@ -47,24 +46,21 @@ int mode)
     } else if (mode == 0) {
         json = bson_as_json(b, json_len);
     } else {
-        PyErr_SetString(PyExc_ValueError, "The value of mode must be one of: "
-                                          "bsonjs.RELAXED, bsonjs.LEGACY, "
-                                          "or bsonjs.CANONICAL.");
+        PyErr_SetString(PyExc_ValueError,
+            "'mode' must be one of bsonjs.RELAXED, bsonjs.LEGACY, or bsonjs.CANONICAL.");
+        bson_reader_destroy(reader);
         return NULL;
     }
 
     bson_reader_destroy(reader);
-
     if (!json) {
         PyErr_SetString(PyExc_ValueError, "invalid BSON document");
         return NULL;
     }
-
     return json;
 }
 
-static PyObject *
-_dumps(PyObject *bson, int mode)
+static PyObject *_dumps(PyObject *bson, int mode)
 {
     PyObject *rv;
     char *bson_str, *json;
@@ -97,24 +93,20 @@ PyDoc_STRVAR(dump__doc__,
 "correspond to the MongoDB Extended JSON 2.0 modes and `LEGACY` uses libbson's\n"
 "legacy JSON format");
 
-static PyObject *
-dump(PyObject *self, PyObject *args, PyObject *kwargs)
+static PyCFunctionWithKeywords *dump(PyObject *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *bson, *file, *json;
     static char *kwlist[] = {"", "", "mode", NULL};
     int mode = 1;
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "SO|i", kwlist, &bson,
-    &file,
-    &mode)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "SO|i", kwlist, &bson, &file, &mode)) {
         return NULL;
     }
 
     json = _dumps(bson, mode);
-    if (!json) {
+    if (!json)
         return NULL;
-    }
 
-    if (PyFile_WriteObject(json, file, Py_PRINT_RAW) == -1) {
+    if (PyFile_WriteObject(json, file, Py_PRINT_RAW) < 0) {
         Py_DECREF(json);
         return NULL;
     }
@@ -132,21 +124,18 @@ PyDoc_STRVAR(dumps__doc__,
 "`bsonjs.CANONICAL`, or `bsonjs.LEGACY`. Where `RELAXED` and `CANONICAL` \n"
 "correspond to the MongoDB Extended JSON 2.0 modes and `LEGACY` uses libbson's\n"
 "legacy JSON format");
-static PyObject *
-dumps(PyObject *self, PyObject *args, PyObject *kwargs)
+static PyCFunctionWithKeywords *dumps(PyObject *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *bson;
     int mode = 1;
     static char *kwlist[] = {"", "mode", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "S|i", kwlist, &bson,
-    &mode)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "S|i", kwlist, &bson, &mode)) {
         return NULL;
     }
     return _dumps(bson, mode);
 }
 
-static PyObject *
-_json_to_bson(const char *json, Py_ssize_t json_len) {
+static PyObject *_json_to_bson(const char *json, Py_ssize_t json_len) {
     bson_t b = BSON_INITIALIZER;
     bson_error_t error = {0};
     PyObject *bson;
@@ -161,7 +150,6 @@ _json_to_bson(const char *json, Py_ssize_t json_len) {
     }
 
     bson = PyBytes_FromStringAndSize((const char *)bson_get_data(&b), b.len);
-
     bson_destroy(&b);
     return bson;
 }
@@ -174,8 +162,7 @@ PyDoc_STRVAR(load__doc__,
 "Extended JSON document) to BSON bytes.\n"
 "This function wraps `bson_init_from_json` from libbson.");
 
-static PyObject *
-load(PyObject *self, PyObject *args)
+static PyCFunction *load(PyObject *self, PyObject *args)
 {
     char *json_str;
     Py_ssize_t json_len;
@@ -186,21 +173,19 @@ load(PyObject *self, PyObject *args)
     }
 
     json = PyObject_CallMethod(file, "read", NULL);
-    if (!json) {
+    if (!json)
         return NULL;
-    }
 
     // Convert unicode to bytes
     if (PyUnicode_Check(json)) {
         PyObject *json_utf = PyUnicode_AsUTF8String(json);
         Py_DECREF(json);
-        if (!json_utf) {
+        if (!json_utf)
             return NULL;
-        }
         json = json_utf;
     }
 
-    if (PyBytes_AsStringAndSize(json, &json_str, &json_len) == -1) {
+    if (PyBytes_AsStringAndSize(json, &json_str, &json_len) < 0) {
         return NULL;
     }
 
@@ -211,14 +196,13 @@ load(PyObject *self, PyObject *args)
 }
 
 PyDoc_STRVAR(loads__doc__,
-"load(json) -> bytes\n"
+"loads(json) -> bytes\n"
 "\n"
 "Encode `json` (a `str` or `bytes-like object` containing a MongoDB Extended\n"
 "JSON document) to BSON bytes.\n"
 "This function wraps `bson_init_from_json` from libbson.");
 
-static PyObject *
-loads(PyObject *self, PyObject *args)
+static PyCFunction *loads(PyObject *self, PyObject *args)
 {
     const char *json_str;
     Py_ssize_t json_len;
@@ -231,42 +215,28 @@ loads(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef BsonjsClientMethods[] = {
-    {"dump", (PyCFunction)(void(*)(void))dump, METH_VARARGS | METH_KEYWORDS, dump__doc__},
-    {"dumps", (PyCFunction)(void(*)(void))dumps, METH_VARARGS | METH_KEYWORDS, dumps__doc__},
+    {"dump", dump, METH_VARARGS | METH_KEYWORDS, dump__doc__},
+    {"dumps", dumps, METH_VARARGS | METH_KEYWORDS, dumps__doc__},
     {"load", load, METH_VARARGS, load__doc__},
     {"loads", loads, METH_VARARGS, loads__doc__},
     {NULL, NULL, 0, NULL}
 };
 
-
-#define INITERROR return NULL
-
-static struct PyModuleDef moduledef = {
+static PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
-    "bsonjs",
-    bsonjs_documentation,
-    -1,
-    BsonjsClientMethods,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
+    .m_name ="bsonjs",
+    .m_doc = bsonjs_documentation,
+    .m_size = -1,
+    .m_methods = BsonjsClientMethods,
 };
 
-PyMODINIT_FUNC
-PyInit_bsonjs(VOID)
-{
-    PyObject* module = PyModule_Create(&moduledef);
-    if (module == NULL) {
-        INITERROR;
-    }
+PyMODINIT_FUNC PyInit_bsonjs(void) {
+    PyObject* module;
 
-    if (PyModule_AddObject(module,
-                           "__version__",
-                           PyUnicode_FromString("0.3.0"))) {
-        Py_DECREF(module);
-        INITERROR;
-    }
+    module = PyModule_Create(&moduledef);
+    if (module == NULL)
+        return NULL;
+
     PyModule_AddIntConstant(module, "LEGACY", 0);
     PyModule_AddIntConstant(module, "RELAXED", 1);
     PyModule_AddIntConstant(module, "CANONICAL", 2);

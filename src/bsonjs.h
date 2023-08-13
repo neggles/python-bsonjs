@@ -17,15 +17,11 @@
 #define PY_SSIZE_T_CLEAN  /* Make "s#" use Py_ssize_t rather than int. */
 #include <Python.h>
 
-static PyObject *
-dump(PyObject *self, PyObject *args, PyObject *kwargs);
+static PyCFunctionWithKeywords *dump(PyObject *self, PyObject *args, PyObject *kwargs);
 
-static PyObject *
-dumps(PyObject *self, PyObject *args, PyObject *kwargs);
+static PyCFunctionWithKeywords *dumps(PyObject *self, PyObject *args, PyObject *kwargs);
 
-static PyObject *
-load(PyObject *self, PyObject *args);
+static PyCFunction *load(PyObject *self, PyObject *args);
 
-static PyObject *
-loads(PyObject *self, PyObject *args);
+static PyCFunction *loads(PyObject *self, PyObject *args);
 

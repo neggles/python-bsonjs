@@ -146,6 +146,9 @@
 #endif
 
 
+/*
+ * Define to 1 if you have rand_r available on your platform.
+ */
 #ifdef MS_WINDOWS
 # define BSON_HAVE_RAND_R 0
 #else
@@ -155,7 +158,9 @@
 # undef BSON_HAVE_RAND_R
 #endif
 
-
+/*
+ * Define to 1 if you have strlcpy available on your platform.
+ */
 #define BSON_HAVE_STRLCPY 0
 #if BSON_HAVE_STRLCPY != 1
 # undef BSON_HAVE_STRLCPY

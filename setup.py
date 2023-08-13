@@ -29,15 +29,25 @@ setup(
         Extension(
             "bsonjs",
             sources=["src/bsonjs.c"] + glob.glob("src/*/*.c"),
-            include_dirs=["src",
-                          "src/bson",
-                          "src/jsonsl",
-                          "src/common"],
+            include_dirs=[
+                "src",
+                "src/bson",
+                "src/jsonsl",
+                "src/common",
+            ],
+            define_macros=[
+                ("BSON_COMPILATION", 1),
+                ("_XOPEN_SOURCE", 700),
+                ("Py_LIMITED_API", "0x03070000"),
+            ],
+            libraries=libraries,
             py_limited_api=True,
-            define_macros=[("BSON_COMPILATION", 1),
-                           ("Py_LIMITED_API", "0x03060000")],
-            libraries=libraries
         )
     ],
-    options={'bdist_wheel': {'py_limited_api': 'cp37'} }
+    options={
+        "bdist_wheel": {"py_limited_api": "cp37"},
+    },
+    package_data={
+        "bsonjs": ["src/py.typed", "src/*.pyi"],
+    },
 )
